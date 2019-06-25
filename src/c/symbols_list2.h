@@ -26,6 +26,9 @@
 #define FFI_ "FFI::"
 typedef struct {
         const char *name, *translation;
+        /* narg >= 0: function takes exactly narg arguments */
+        /* narg < 0: function takes -narg-1 required arguments */
+        int narg;
 } cl_symbol_initializer;
 #else
 #include "ecl_constants.h"
