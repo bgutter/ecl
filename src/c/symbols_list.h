@@ -1235,8 +1235,8 @@ cl_symbols[] = {
 {SYS_ "REM-SYSPROP", SI_ORDINARY, si_rem_sysprop, 2, OBJNULL},
 {SYS_ "REPLACE-ARRAY", SI_ORDINARY, si_replace_array, 2, OBJNULL},
 {SYS_ "ROW-MAJOR-ASET", SI_ORDINARY, si_row_major_aset, 3, OBJNULL},
-{EXT_ "RUN-PROGRAM", EXT_ORDINARY, si_run_program, -1, OBJNULL},
-{EXT_ "TERMINATE-PROCESS", EXT_ORDINARY, si_terminate_process, -1, OBJNULL},
+{EXT_ "RUN-PROGRAM", EXT_ORDINARY, si_run_program, -3, OBJNULL},
+{EXT_ "TERMINATE-PROCESS", EXT_ORDINARY, si_terminate_process, -2, OBJNULL},
 {SYS_ "WAIT-FOR-ALL-PROCESSES", SI_ORDINARY, si_wait_for_all_processes, -1, OBJNULL},
 {EXT_ "SAFE-EVAL", EXT_ORDINARY, ECL_NAME(si_safe_eval), -3, OBJNULL},
 {SYS_ "SCH-FRS-BASE", SI_ORDINARY, si_sch_frs_base, 2, OBJNULL},
@@ -1990,7 +1990,7 @@ cl_symbols[] = {
 {KEY_ "SIGNALED", KEYWORD, NULL, -1, OBJNULL},
 {KEY_ "STOPPED", KEYWORD, NULL, -1, OBJNULL},
 
-{EXT_ "EXTERNAL-PROCESS-WAIT", EXT_ORDINARY, si_external_process_wait, -1, OBJNULL},
+{EXT_ "EXTERNAL-PROCESS-WAIT", EXT_ORDINARY, si_external_process_wait, -2, OBJNULL},
 
 #if defined(ECL_MS_WINDOWS_HOST) || defined(cygwin)
 {SYS_ "CLOSE-WINDOWS-HANDLE", SI_ORDINARY, si_close_windows_handle, 1, OBJNULL},
