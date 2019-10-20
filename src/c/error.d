@@ -122,12 +122,15 @@ cl_object
 CEerror(cl_object c, const char *err, int narg, ...)
 {
         ecl_va_list args;
+  cl_object rest;
         ecl_va_start(args, narg, narg, 0);
         ecl_enable_interrupts();
+  rest = cl_grab_rest_args(args);
+  ecl_va_end(args);
         return funcall(4, @'si::universal-error-handler',
                        c,                       /*  correctable  */
                        make_constant_base_string(err),  /*  continue-format-string  */
-                       cl_grab_rest_args(args));
+                       rest);
 }
 
 /***********************
@@ -188,12 +191,15 @@ void
 FEcontrol_error(const char *s, int narg, ...)
 {
         ecl_va_list args;
+  cl_object rest;
         ecl_va_start(args, narg, narg, 0);
+  rest = cl_grab_rest_args(args);
+  ecl_va_end(args);
         si_signal_simple_error(4,
                                @'control-error', /* condition name */
                                ECL_NIL, /* not correctable */
                                make_constant_base_string(s), /* format control */
-                               cl_grab_rest_args(args)); /* format args */
+                               rest); /* format args */
 }
 
 void
@@ -204,6 +210,7 @@ FEreader_error(const char *s, cl_object stream, int narg, ...)
         ecl_va_list args;
         ecl_va_start(args, narg, narg, 0);
         args_list = cl_grab_rest_args(args);
+  ecl_va_end(args);
         if (Null(stream)) {
                 /* Parser error */
                 si_signal_simple_error(4,
@@ -491,6 +498,7 @@ FElibc_error(const char *msg, int narg, ...)
 
         ecl_va_start(args, narg, narg, 0);
         rest = cl_grab_rest_args(args);
+  ecl_va_end(args);
 
         FEerror("~?~%C library explanation: ~A.", 3,
                 make_constant_base_string(msg), rest,
@@ -517,6 +525,7 @@ FEwin32_error(const char *msg, int narg, ...)
 
         ecl_va_start(args, narg, narg, 0);
         rest = cl_grab_rest_args(args);
+  ecl_va_end(args);
         FEerror("~?~%Windows library explanation: ~A.", 3,
                 make_constant_base_string(msg), rest,
                 win_msg_obj);
@@ -537,18 +546,18 @@ FEwin32_error(const char *msg, int narg, ...)
 @)
 
 @(defun cerror (cformat eformat &rest args)
-@
+@ {
         ecl_enable_interrupts();
-        return funcall(4, @'si::universal-error-handler', cformat, eformat,
-                       cl_grab_rest_args(args));
-@)
+  @(return funcall(4, @'si::universal-error-handler', cformat, eformat,
+                   cl_grab_rest_args(args)));
+} @)
 
 @(defun si::serror (cformat eformat &rest args)
-@
+@ {
         ecl_enable_interrupts();
-        return funcall(4, @'si::stack-error-handler', cformat, eformat,
-                       cl_grab_rest_args(args));
-@)
+  @(return funcall(4, @'si::stack-error-handler', cformat, eformat,
+                   cl_grab_rest_args(args)));
+} @)
 
 void
 init_error(void)

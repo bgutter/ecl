@@ -188,8 +188,11 @@ ecl_number_equalp(cl_object x, cl_object y)
                 ecl_va_start(numb, narg, narg, 0);
                 numi = ecl_va_arg(nums);
                 for (j = 1; j<i; j++)
-                        if (ecl_number_equalp(numi, ecl_va_arg(numb)))
-                                @(return ECL_NIL)
+                        if (ecl_number_equalp(numi, ecl_va_arg(numb))) {
+                                ecl_va_end(numb);
+                                @(return ECL_NIL);
+                        }
+                ecl_va_end(numb);
         }
         @(return ECL_T)
 @)

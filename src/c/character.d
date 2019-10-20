@@ -291,8 +291,11 @@ ecl_char_equal(cl_object x, cl_object y)
                 ecl_va_start(ds, narg, narg, 0);
                 c = ecl_va_arg(cs);
                 for (j=1;  j<i;  j++)
-                        if (ecl_char_equal(c, ecl_va_arg(ds)))
-                                @(return ECL_NIL)
+                        if (ecl_char_equal(c, ecl_va_arg(ds))) {
+                                ecl_va_end(ds);
+                                @(return ECL_NIL);
+                        }
+                ecl_va_end(ds);
         }
         @(return ECL_T)
 @)
