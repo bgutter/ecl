@@ -875,8 +875,10 @@
 
 (in-package "SI")
 
-(defvar c::*in-all-symbols-functions*
-  `(;; arraylib.lsp
+#+ecl-min
+(proclaim
+  `(si::c-export-fname
+;; arraylib.lsp
     make-array vector array-dimensions array-in-bounds-p array-row-major-index
     bit sbit bit-and bit-ior bit-xor bit-eqv bit-nand bit-nor bit-andc1
     bit-andc2 bit-orc1 bit-orc2 bit-not
@@ -990,10 +992,7 @@
     ext:non-positive-double-float-p ext:positive-double-float-p 
     ext:negative-long-float-p ext:non-negative-long-float-p
     ext:non-positive-long-float-p ext:positive-long-float-p 
-))
 
-(proclaim
-  `(si::c-export-fname #+ecl-min ,@c::*in-all-symbols-functions*
     typecase-error-string find-documentation find-declarations
     si::search-keyword si::check-keyword
     si::dm-too-many-arguments si::dm-too-few-arguments

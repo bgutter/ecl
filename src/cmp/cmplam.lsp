@@ -118,7 +118,7 @@ The function thus belongs to the type of functions that ecl_make_cfun accepts."
          (lambda-expr (c1lambda-expr lambda-list-and-body
                                      name
                                      (si::function-block-name name)))
-         cfun exported minarg maxarg)
+         cfun exported minarg maxarg proclamation-found)
     (when (and no-entry (policy-debug-ihs-frame))
       (setf no-entry nil)
       (cmpnote "Ignoring SI::C-LOCAL declaration for~%~4I~A~%because the debug level is large" name))
@@ -127,21 +127,44 @@ The function thus belongs to the type of functions that ecl_make_cfun accepts."
     (setf (fun-lambda fun) lambda-expr)
     (if global
         (multiple-value-setq (cfun exported) (exported-fname name))
-        (setf cfun (next-cfun "LC~D~A" name) exported nil))
-    #+ecl-min
-    (when (member name c::*in-all-symbols-functions*)
-      (setf no-entry t))
+      (setf cfun (next-cfun "LC~D~A" name) exported nil))
     (if exported
         ;; Check whether the function was proclaimed to have a certain
         ;; number of arguments, and otherwise produce a function with
         ;; a flexible signature.
         (progn
-          (multiple-value-setq (minarg maxarg) (get-proclaimed-narg name))
-          (format t "~&;;; Function ~A proclaimed (~A,~A)" name minarg maxarg)
-          (unless minarg
-            (setf minarg 0 maxarg call-arguments-limit)))
-        (multiple-value-setq (minarg maxarg)
-          (lambda-form-allowed-nargs lambda-expr)))
+          (multiple-value-setq (minarg maxarg proclamation-found)
+            (get-proclaimed-narg name))
+          (cmpdebug "~&;;; Function ~A proclaimed (~A,~A)" name minarg maxarg)
+          (multiple-value-bind (found-minarg found-maxarg)
+              (lambda-form-allowed-nargs lambda-expr)
+            (if proclamation-found
+                ;; sanity check that the proclamation matches the actual
+                ;; number of arguments found
+                (when (or (/= minarg found-minarg) (/= maxarg found-maxarg))
+                  (cmperr "Function ~A takes between ~A and ~A arguments, but is proclaimed to take between ~A and ~A arguments"
+                          name found-minarg found-maxarg minarg maxarg))
+              ;; no proclamation found, produce function with
+              ;; flexible signature
+              (setf minarg found-minarg))))
+      (multiple-value-setq (minarg maxarg)
+        (lambda-form-allowed-nargs lambda-expr)))
+    #+ecl-min
+    (when exported
+      (multiple-value-bind (found ignored minarg-core maxarg-core)
+          (si::mangle-name name)
+        (declare (ignore ignored))
+        (when found
+          ;; Core functions declared in symbols_list.h are
+          ;; initialized during startup in all_symbols.d
+          (setf no-entry t)
+          ;; Sanity check that the number of arguments is consistent
+          ;; with the declaration in symbols_list.h
+          (when (or (/= minarg minarg-core)
+                    (and (= maxarg minarg)
+                         (/= maxarg maxarg-core)))
+            (cmperr "Function ~A takes between ~A and ~A arguments, but is declared to take between ~A and ~A arguments in symbols_list.h"
+                    name minarg maxarg minarg-core maxarg-core)))))
     (setf (fun-cfun fun) cfun
           (fun-exported fun) exported
           (fun-closure fun) nil
