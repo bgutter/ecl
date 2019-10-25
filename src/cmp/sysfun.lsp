@@ -872,11 +872,17 @@
 ;;; name that users (and compiled code) can refer to. This means, for instance, that
 ;;; MAKE-ARRAY will be compiled to a function called cl_make_array, etc.
 ;;;
+;;; Note that if the created C function should take only fixed
+;;; arguments, a proclamation for the function type must exist so that
+;;; the compiler can produce the correct function signature!
+;;;
 
 (in-package "SI")
 
-(defvar c::*in-all-symbols-functions*
-  `(;; arraylib.lsp
+#+ecl-min
+(proclaim
+  `(si::c-export-fname
+    ;; arraylib.lsp
     make-array vector array-dimensions array-in-bounds-p array-row-major-index
     bit sbit bit-and bit-ior bit-xor bit-eqv bit-nand bit-nor bit-andc1
     bit-andc2 bit-orc1 bit-orc2 bit-not
@@ -895,8 +901,18 @@
     si::bind-simple-restarts si::bind-simple-handlers
     si::assert-failure compute-restarts find-restart invoke-restart
     invoke-restart-interactively make-condition
+    ;; defmacro.lsp
+    find-documentation find-declarations
+    si::search-keyword si::check-keyword
+    si::dm-too-many-arguments si::dm-too-few-arguments
+    remove-documentation
+    ;; defstruct.lsp
+    si::structure-type-error si::define-structure
     ;; describe.lsp
     describe inspect
+    ;; helpfile.lsp
+    si::get-documentation si::set-documentation
+    si::expand-set-documentation
     ;; iolib.lsp
     read-from-string write-to-string prin1-to-string princ-to-string
     y-or-n-p yes-or-no-p string-to-object dribble ext:make-encoding
@@ -919,14 +935,26 @@
     logtest byte byte-size byte-position ldb ldb-test mask-field dpb
     deposit-field
     ;; packlib.lsp
-    find-all-symbols apropos apropos-list
+    find-all-symbols apropos apropos-list si::packages-iterator
+    ;; pprint.lsp
+    pprint-fill copy-pprint-dispatch pprint-dispatch
+    pprint-linear pprint-newline pprint-tab pprint-tabular
+    set-pprint-dispatch pprint-indent
+    si::pprint-logical-block-helper si::pprint-pop-helper
     ;; predlib.lsp
     upgraded-array-element-type upgraded-complex-part-type typep subtypep coerce
-    do-deftype si::ratiop si::single-float-p si::short-float-p si::double-float-p
+    si::do-deftype si::ratiop si::single-float-p si::short-float-p si::double-float-p
     si::long-float-p
+    ;; process.lsp
+    ext:run-program
+    ext:terminate-process
     ;; seq.lsp
     make-sequence concatenate map some every notany notevery map-into
     complement
+    si::make-seq-iterator si::seq-iterator-ref
+    si::seq-iterator-set si::seq-iterator-next
+    si::sequence-count
+    si::coerce-to-list si::coerce-to-vector
     ;; seqlib.lsp
     reduce fill replace
     remove remove-if remove-if-not delete delete-if delete-if-not
@@ -936,38 +964,64 @@
     delete-duplicates mismatch search sort stable-sort merge constantly
     ;; setf.lsp
     si::do-defsetf si::do-define-setf-method
-    ;; process.lsp
-    ext:run-program
-    ext:terminate-process
-    ;; pprint.lsp
-    pprint-fill copy-pprint-dispatch pprint-dispatch
-    pprint-linear pprint-newline pprint-tab pprint-tabular
-    set-pprint-dispatch pprint-indent
+    ;; trace.lsp
+    si::traced-old-definition
 
+    #+formatter
+    ,@'(
+        format-princ format-prin1 format-print-named-character
+        format-print-integer
+        format-print-cardinal format-print-ordinal format-print-old-roman
+        format-print-roman format-fixed format-exponential
+        format-general format-dollars
+        format-relative-tab format-absolute-tab
+        format-justification
+        )
     #+clos
-    ,@'(;; combin.lsp
-     method-combination-error
-     invalid-method-error
-     clos:std-compute-applicable-methods
-     clos:std-compute-effective-method
-     clos:compute-effective-method-function
-     ;; std-slot-value.lsp
-     clos::standard-instance-access ;; alias clos:funcallable-standard-instance-access
-     clos::standard-instance-set
-     subclassp of-class-p
-     ;; boot.lsp
-     slot-boundp
-     slot-makunbound
-     slot-value
-     clos::slot-value-set
-     slot-exists-p
-     clos::need-to-make-load-form-p
-     ;; defclass
-     clos:load-defclass
-     ;; method
-     clos:extract-lambda-list
-     clos:extract-specializer-names
-     )
+    ,@'(
+        ;; combin.lsp
+        invalid-method-error
+        method-combination-error
+        clos:compute-effective-method-function
+        clos:std-compute-effective-method
+        ;; defclass.lsp
+        clos::ensure-class
+        clos:load-defclass
+        ;; generic.lsp
+        clos::associate-methods-to-gfun
+        ;; kernel.lsp
+        clos::install-method
+        clos:std-compute-applicable-methods
+        ;; method.lsp
+        clos:extract-lambda-list
+        clos:extract-specializer-names
+        ;; predlib.lsp
+        si::subclassp si::of-class-p
+        ;; print.lsp
+        clos::need-to-make-load-form-p
+        ;; slotvalue.lsp
+        slot-makunbound
+        ;; std-slot-value.lsp
+        slot-boundp
+        slot-exists-p
+        slot-value
+        clos::find-slot-definition
+        clos::slot-value-set
+        clos::standard-instance-access ;; alias clos:funcallable-standard-instance-access
+        clos::standard-instance-set
+
+        ;; clos::generic-function-lambda-list
+        ;; clos::generic-function-argument-precedence-order
+        ;; clos::generic-function-method-combination
+        ;; clos::generic-function-method-class
+        ;; clos::generic-function-methods
+        ;; clos::method-generic-function
+        ;; clos::method-lambda-list
+        ;; clos::method-specializers
+        ;; clos::method-qualifiers
+        ;; clos::method-function
+        ;; clos::method-plist
+        )
 
     ;; cdr-5
     ext:array-index-p
@@ -991,56 +1045,5 @@
     ext:non-positive-double-float-p ext:positive-double-float-p 
     ext:negative-long-float-p ext:non-negative-long-float-p
     ext:non-positive-long-float-p ext:positive-long-float-p 
-))
-
-(proclaim
-  `(si::c-export-fname #+ecl-min ,@c::*in-all-symbols-functions*
-    typecase-error-string find-documentation find-declarations
-    si::search-keyword si::check-keyword
-    si::dm-too-many-arguments si::dm-too-few-arguments
-    remove-documentation si::get-documentation
-    si::set-documentation si::expand-set-documentation
-    si::packages-iterator
-    si::pprint-logical-block-helper si::pprint-pop-helper
-    si::make-seq-iterator si::seq-iterator-ref
-    si::seq-iterator-set si::seq-iterator-next
-    si::sequence-count
-    si::structure-type-error si::define-structure
-    si::coerce-to-list si::coerce-to-vector
-    si::traced-old-definition
-
-    #+formatter
-    ,@'(
-    format-princ format-prin1 format-print-named-character
-    format-print-integer
-    format-print-cardinal format-print-ordinal format-print-old-roman
-    format-print-roman format-fixed format-exponential
-    format-general format-dollars
-    format-relative-tab format-absolute-tab
-    format-justification
-        )
-    #+clos
-    ,@'(;; defclass.lsp
-     clos::ensure-class
-     clos::find-slot-definition
-     ;; combin.lsp
-     clos::simple-code-walker
-     ;; kernel.lsp
-     clos::install-method
-     clos::default-initargs-of
-     ;; clos::generic-function-lambda-list
-     ;; clos::generic-function-argument-precedence-order
-     ;; clos::generic-function-method-combination
-     ;; clos::generic-function-method-class
-     ;; clos::generic-function-methods
-     ;; clos::method-generic-function
-     ;; clos::method-lambda-list
-     ;; clos::method-specializers
-     ;; clos::method-qualifiers
-     ;; clos::method-function
-     ;; clos::method-plist
-     clos::associate-methods-to-gfun
-     ;; method.lsp
-     clos::pop-next-method
-     )))
+    ))
 
